@@ -3,7 +3,7 @@ import './App.css'
 import Kanban from './components/Kanban'
 import ListView from './components/ListView'
 import TimelineView from './components/TimelineView'
-import { allTasks as initialTasks, users } from '../taskdata'
+import { allTasks as initialTasks } from '../taskdata'
 
 export interface Collaborator {
   id: string;
