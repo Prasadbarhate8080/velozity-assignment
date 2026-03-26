@@ -89,7 +89,7 @@ function Kanban({ tasks, setTasks, collaborators }: KanbanProps) {
       setActiveColumn(foundColumn);
     };
 
-    const handlePointerUp = (e: PointerEvent) => {
+    const handlePointerUp = () => {
       if (!dragState || isSnapping) return;
 
       // If dropped over a valid new column, update the task's status
