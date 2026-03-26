@@ -22,13 +22,30 @@ const STATUS_OPTIONS: Task['status'][] = ['todo', 'inprogress', 'review', 'done'
 const ROW_HEIGHT = 72; // height of each row in pixels
 const BUFFER_COUNT = 5; // number of rows to render above and below visible area
 
+/**
+ * ListView Component
+ * 
+ * A high-performance table view for managing large datasets of tasks.
+ * Key features:
+ * 1. Custom Virtual Scrolling: Renders 500+ tasks efficiently by only showing visible rows.
+ * 2. Dynamic Sorting: Sort by title, priority, or due date.
+ * 3. Inline Editing: Quick status changes via dropdown.
+ * 4. Collaboration Indicators: Shows who is currently viewing each task.
+ */
+
 const ListView = ({ tasks, setTasks, collaborators }: ListViewProps) => {
+  // --- State Management ---
   const [sortField, setSortField] = useState<SortField>('title')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
+  
+  // Virtual scrolling state: track scroll position and viewport size
   const [scrollTop, setScrollTop] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(600);
 
+  /**
+   * Toggles sort direction if same field, otherwise sets new sort field.
+   */
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -38,6 +55,10 @@ const ListView = ({ tasks, setTasks, collaborators }: ListViewProps) => {
     }
   }
 
+  /**
+   * Memoized sorted tasks to avoid expensive re-sorting on every render.
+   * Uses a fresh array spread to avoid mutating original state.
+   */
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
       let comparison = 0;
@@ -54,8 +75,11 @@ const ListView = ({ tasks, setTasks, collaborators }: ListViewProps) => {
     });
   }, [tasks, sortField, sortOrder]);
 
-  // Virtual scrolling calculations
+  // --- Virtual Scrolling Logic ---
+  // We calculate which slice of the array to show based on scroll offset.
   const totalHeight = sortedTasks.length * ROW_HEIGHT;
+  
+  // Calculate start/end indices with a buffer to prevent "white gaps" during fast scrolls.
   const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_COUNT);
   const endIndex = Math.min(
     sortedTasks.length - 1,
@@ -63,8 +87,13 @@ const ListView = ({ tasks, setTasks, collaborators }: ListViewProps) => {
   );
 
   const visibleTasks = sortedTasks.slice(startIndex, endIndex + 1);
+  
+  // offsetY pushes the visible rows down to their correct position in the scrollable area.
   const offsetY = startIndex * ROW_HEIGHT;
 
+  /**
+   * Effect to handle responsive viewport height changes.
+   */
   useEffect(() => {
     if (containerRef.current) {
       setViewportHeight(containerRef.current.clientHeight);
@@ -80,10 +109,16 @@ const ListView = ({ tasks, setTasks, collaborators }: ListViewProps) => {
     }
   }, []);
 
+  /**
+   * Scroll handler to update the virtual viewport.
+   */
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop);
   };
 
+  /**
+   * Updates task status directly in the parent state.
+   */
   const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
   }

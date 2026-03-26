@@ -12,14 +12,32 @@ const PRIORITY_HEX = {
   low: '#64748b',      // bg-slate-500
 }
 
+/**
+ * TimelineView Component
+ * 
+ * A Gantt-style chart that plots tasks on a horizontal time axis.
+ * Features:
+ * 1. Automatic month-spanning axis.
+ * 2. Priority-based color coding.
+ * 3. Today's date marker with a vertical line.
+ * 4. Alternating row colors for readability.
+ * 5. Hover effects showing the assignee.
+ */
+
 const TimelineView = ({ tasks }: TimelineViewProps) => {
+  // Current date context
   const today = new Date()
   const currentMonth = today.getMonth()
   const currentYear = today.getFullYear()
 
+  // Month metadata
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
   const monthStartDate = new Date(currentYear, currentMonth, 1)
 
+  /**
+   * Translates a Date object into a grid column index (0-indexed).
+   * Returns -1 if the date falls outside the current month.
+   */
   const getDayPosition = (date: Date) => {
     const dateMonth = date.getMonth();
     const dateYear = date.getFullYear();
@@ -27,10 +45,15 @@ const TimelineView = ({ tasks }: TimelineViewProps) => {
     return date.getDate() - 1;
   };
 
+  /**
+   * Logic to calculate the CSS Grid positioning for a task bar.
+   * Handles tasks with no start date by rendering them as single-day markers.
+   */
   const getTaskStyle = (task: Task) => {
     const hasStartDate = task.startDate && task.startDate.length > 0;
     const hasDueDate = task.dueDate && task.dueDate.length > 0;
 
+    // We need at least a due date to show anything
     if (!hasDueDate) return { display: 'none' };
 
     const startDate = hasStartDate ? new Date(task.startDate!) : new Date(task.dueDate!);
@@ -39,11 +62,14 @@ const TimelineView = ({ tasks }: TimelineViewProps) => {
     const startPos = getDayPosition(startDate);
     const endPos = getDayPosition(dueDate);
 
+    // Filter out tasks outside the current month view
     if (startPos === -1 && endPos === -1) return { display: 'none' };
 
+    // Calculate grid spans (1-indexed for CSS Grid)
     const gridColumnStart = startPos === -1 ? 1 : startPos + 1;
     let gridColumnEnd = endPos === -1 ? daysInMonth + 1 : endPos + 2;
 
+    // Single-day fallback if no start date provided
     if (!hasStartDate) {
       gridColumnEnd = gridColumnStart + 1;
     }

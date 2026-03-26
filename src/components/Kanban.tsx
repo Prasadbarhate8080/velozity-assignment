@@ -36,10 +36,12 @@ function Kanban({ tasks, setTasks, collaborators }: KanbanProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const columnsRef = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Main entry point for the custom Drag and Drop logic
   const handlePointerDown = (e: React.PointerEvent, task: Task, rect: DOMRect) => {
-    // Only left click or touch
+    // We only care about left-clicks or touch starts
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
+    // Capture the initial state so we can render the overlay and placeholder accurately
     setDragState({
       taskId: task.id,
       initialX: rect.left,
@@ -48,17 +50,19 @@ function Kanban({ tasks, setTasks, collaborators }: KanbanProps) {
       currentY: rect.top,
       width: rect.width,
       height: rect.height,
+      // Offset allows us to keep the card centered exactly where the user grabbed it
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
       originalStatus: task.status,
     });
     
-    // Capture pointer on the element that was clicked
+    // Crucial: Pointer capture keeps events firing on this element even if the cursor leaves it
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
+      // Don't do anything if we aren't dragging or if we are in the middle of a snap-back animation
       if (!dragState || isSnapping) return;
 
       const newX = e.clientX - dragState.offsetX;
@@ -66,7 +70,7 @@ function Kanban({ tasks, setTasks, collaborators }: KanbanProps) {
 
       setDragState(prev => prev ? { ...prev, currentX: newX, currentY: newY } : null);
 
-      // Detect which column we are over
+      // Hit detection: Check which column's bounding box the cursor is currently inside
       let foundColumn: Task['status'] | null = null;
       for (const [status, el] of Object.entries(columnsRef.current)) {
         if (el) {
@@ -85,24 +89,25 @@ function Kanban({ tasks, setTasks, collaborators }: KanbanProps) {
       setActiveColumn(foundColumn);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       if (!dragState || isSnapping) return;
 
+      // If dropped over a valid new column, update the task's status
       if (activeColumn && activeColumn !== dragState.originalStatus) {
         setTasks(prev => prev.map(t => t.id === dragState.taskId ? { ...t, status: activeColumn } : t));
         setDragState(null);
         setActiveColumn(null);
       } else {
-        // Snap back animation
+        // If dropped in the same column or outside, trigger the snap-back transition
         setIsSnapping(true);
-        // We keep the dragState but set current to initial for the transition
         setDragState(prev => prev ? { ...prev, currentX: prev.initialX, currentY: prev.initialY } : null);
         
+        // Wait for the CSS transition to finish before clearing state
         setTimeout(() => {
           setDragState(null);
           setActiveColumn(null);
           setIsSnapping(false);
-        }, 300); // match transition duration
+        }, 300);
       }
     };
 
