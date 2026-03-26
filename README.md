@@ -1,5 +1,7 @@
 # Velozity Project Management Tool
 
+**[Live Demo](https://velozity-assignment.vercel.app/)**
+
 A high-performance, interactive project management dashboard featuring Kanban, List, and Timeline views with real-time collaboration simulations. Built entirely with **native Web APIs** to demonstrate deep understanding of the browser's capabilities.
 
 ## 🚀 Key Features
